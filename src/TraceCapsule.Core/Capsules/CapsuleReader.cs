@@ -14,7 +14,8 @@ public static class CapsuleReader
         using var archive = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
         var capsule = new Capsule
         {
-            Metadata = await ReadEntryAsync<CapsuleMetadata>(archive, "metadata.json", cancellationToken) ?? new CapsuleMetadata(),
+            Metadata = await ReadEntryAsync<CapsuleMetadata>(archive, "metadata.json", cancellationToken)
+                ?? throw new InvalidDataException("The capsule is missing required metadata.json."),
             Request = await ReadEntryAsync<HttpRequestRecord>(archive, "request.json", cancellationToken),
             Response = await ReadEntryAsync<HttpResponseRecord>(archive, "response.json", cancellationToken),
             Trace = await ReadEntryAsync<List<SpanRecord>>(archive, "trace.json", cancellationToken) ?? [],

@@ -138,7 +138,7 @@ merge.SetAction(async (parseResult, cancellationToken) =>
     foreach (var file in Directory.EnumerateFiles(fromDir, "*.capsule"))
     {
         var candidate = await CapsuleReader.ReadAsync(file, cancellationToken);
-        if (candidate.Metadata.SessionId == sessionId) parts.Add(candidate);
+        if (candidate.Metadata.SessionId == sessionId && !candidate.Metadata.IsMerged) parts.Add(candidate);
     }
     if (parts.Count == 0)
     {
@@ -146,6 +146,7 @@ merge.SetAction(async (parseResult, cancellationToken) =>
         return 1;
     }
     var merged = CapsuleMerger.Merge(parts);
+    merged.Metadata.IsMerged = true;
     var outputPath = parseResult.GetValue(mergeOutputOption) ?? Path.Combine(fromDir, $"{merged.Metadata.TraceId}.merged.capsule");
     await CapsuleWriter.WriteAsync(merged, outputPath, cancellationToken);
     Console.WriteLine($"Merged {parts.Count} capsule(s) from session '{sessionId}' into {outputPath}");

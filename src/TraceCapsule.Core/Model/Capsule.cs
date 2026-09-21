@@ -24,6 +24,9 @@ public sealed class CapsuleMetadata
     /// multi-service execution (Phase 5). Capsules that share the same SessionId can be
     /// combined with <c>CapsuleMerger</c>.</summary>
     public string? SessionId { get; set; }
+
+    /// <summary>Identifies an aggregate so subsequent CLI merges use original parts only.</summary>
+    public bool IsMerged { get; set; }
 }
 
 /// <summary>The full, in-memory representation of a <c>.capsule</c> file: everything

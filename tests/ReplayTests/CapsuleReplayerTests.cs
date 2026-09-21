@@ -64,6 +64,18 @@ public class CapsuleReplayerTests
     }
 
     [Fact]
+    public async Task Replay_response_secrets_are_redacted_before_the_capture_limit()
+    {
+        using var server = new FakeHttpServer();
+        var body = "{\"token\":\"live-response-secret\",\"padding\":\"" + new string('x', 70000) + "\"}";
+        var respondTask = server.RespondOnceAsync(200, body);
+        var result = await CapsuleReplayer.ReplayAsync(BuildOriginal(), server.BaseUrl, FaultInjectionOptions.None);
+        await respondTask;
+        Assert.DoesNotContain("live-response-secret", result.Response!.Body);
+        Assert.EndsWith("...(truncated)", result.Response.Body);
+    }
+
+    [Fact]
     public async Task Throws_when_the_capsule_has_no_recorded_request()
     {
         var capsule = new Capsule { Metadata = new CapsuleMetadata { TraceId = "t" } };

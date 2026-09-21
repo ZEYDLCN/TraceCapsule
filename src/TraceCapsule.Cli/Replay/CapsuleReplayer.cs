@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Text;
 using TraceCapsule.Core;
 using TraceCapsule.Core.Fault;
 using TraceCapsule.Core.Model;
 using TraceCapsule.Core.Recording;
+using TraceCapsule.Core.Redaction;
 
 namespace TraceCapsule.Cli.Replay;
 
@@ -31,7 +33,10 @@ public static class CapsuleReplayer
         using var message = new HttpRequestMessage(new HttpMethod(request.Method), request.Path + request.QueryString);
         if (!string.IsNullOrEmpty(request.Body))
         {
-            message.Content = new StringContent(request.Body, Encoding.UTF8, request.ContentType ?? "application/json");
+            var contentType = MediaTypeHeaderValue.Parse(request.ContentType ?? "application/json");
+            var encoding = string.IsNullOrEmpty(contentType.CharSet) ? Encoding.UTF8 : Encoding.GetEncoding(contentType.CharSet.Trim('"'));
+            message.Content = new StringContent(request.Body, encoding);
+            message.Content.Headers.ContentType = contentType;
         }
         foreach (var (name, values) in request.Headers)
         {
@@ -45,15 +50,16 @@ public static class CapsuleReplayer
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            var response = await client.SendAsync(message, cancellationToken);
+            using var response = await client.SendAsync(message, cancellationToken);
             var bodyBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             stopwatch.Stop();
 
             return BuildResult(original, startedAt, stopwatch.Elapsed, response: new HttpResponseRecord
             {
                 StatusCode = (int)response.StatusCode,
-                Headers = response.Headers.Concat(response.Content.Headers).ToDictionary(h => h.Key, h => h.Value.ToArray()),
-                Body = BodyCapture.FromBytes(bodyBytes, maxBytes: 64 * 1024),
+                Headers = RedactionEngine.Default.RedactHeaders(response.Headers.Concat(response.Content.Headers)
+                    .Select(h => new KeyValuePair<string, string[]>(h.Key, h.Value.ToArray()))),
+                Body = BodyCapture.FromBytes(bodyBytes, maxBytes: 64 * 1024, redaction: RedactionEngine.Default),
                 ContentType = response.Content.Headers.ContentType?.ToString(),
             }, exception: null);
         }

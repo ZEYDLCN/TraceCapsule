@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\TraceCapsule.RabbitMQ\TraceCapsule.RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\src\TraceCapsule.Cli\TraceCapsule.Cli.csproj" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

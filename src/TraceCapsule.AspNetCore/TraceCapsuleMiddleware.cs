@@ -100,15 +100,31 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
 
         var requestHeaders = ToHeaderDictionary(request.Headers);
         var responseHeaders = ToHeaderDictionary(response.Headers);
-        var requestBody = BodyCapture.FromBytes(requestBodyBytes, _options.MaxCapturedBodyBytes);
-        var responseBody = BodyCapture.FromBytes(responseBodyBytes, _options.MaxCapturedBodyBytes);
+        var requestBody = BodyCapture.FromBytes(requestBodyBytes, _options.MaxCapturedBodyBytes, redaction);
+        var responseBody = BodyCapture.FromBytes(responseBodyBytes, _options.MaxCapturedBodyBytes, redaction);
 
         if (redaction is not null)
         {
             requestHeaders = redaction.RedactHeaders(requestHeaders);
             responseHeaders = redaction.RedactHeaders(responseHeaders);
-            requestBody = redaction.RedactJsonBody(requestBody);
-            responseBody = redaction.RedactJsonBody(responseBody);
+        }
+
+        // Dependency recorders collect raw data in memory. Apply the host's policy at
+        // the persistence boundary, including queue bodies and headers.
+        foreach (var call in recording.ExternalHttpCalls)
+        {
+            call.RequestHeaders = redaction?.RedactHeaders(call.RequestHeaders) ?? call.RequestHeaders;
+            call.ResponseHeaders = redaction?.RedactHeaders(call.ResponseHeaders) ?? call.ResponseHeaders;
+            call.RequestBody = CaptureText(call.RequestBody, redaction);
+            call.ResponseBody = CaptureText(call.ResponseBody, redaction);
+        }
+        foreach (var message in recording.Events)
+        {
+            message.Payload = CaptureText(message.Payload, redaction);
+            if (redaction is not null)
+                message.Headers = redaction.RedactHeaders(message.Headers.Select(h =>
+                    new KeyValuePair<string, string[]>(h.Key, [h.Value])))
+                    .ToDictionary(h => h.Key, h => h.Value[0]);
         }
 
         var exceptions = recording.Exceptions.ToList();
@@ -196,6 +212,9 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
             logger.LogWarning(ex, "TraceCapsule failed to persist a capsule for trace {TraceId}", capsule.Metadata.TraceId);
         }
     }
+
+    private string? CaptureText(string? text, RedactionEngine? redaction) => text is null ? null :
+        BodyCapture.FromBytes(System.Text.Encoding.UTF8.GetBytes(text), _options.MaxCapturedBodyBytes, redaction);
 
     private static async Task<byte[]> ReadAllAsync(Stream stream)
     {

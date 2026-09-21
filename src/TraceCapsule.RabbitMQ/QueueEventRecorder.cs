@@ -38,7 +38,8 @@ public static class QueueEventRecorder
             Exchange = exchange,
             RoutingKey = routingKey,
             Queue = queue,
-            Payload = BodyCapture.FromBytes(body, maxBytes: 64 * 1024),
+            // Keep JSON complete until the host applies its redaction policy and limit.
+            Payload = BodyCapture.FromBytes(body, maxBytes: int.MaxValue),
             Headers = headers is null ? new Dictionary<string, string>() : new Dictionary<string, string>(headers),
             Timestamp = DateTimeOffset.UtcNow,
         });
