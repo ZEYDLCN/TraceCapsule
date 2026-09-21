@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Capsule domain model, policy-driven redaction engine, ZIP-based capsule writer/reader, and capsule merger for TraceCapsule — turn a production execution into a sanitized, portable, replayable artifact.</Description>
+  </PropertyGroup>
+
 </Project>

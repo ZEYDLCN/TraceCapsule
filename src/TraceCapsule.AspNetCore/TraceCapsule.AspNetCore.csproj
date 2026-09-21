@@ -14,4 +14,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <Description>ASP.NET Core middleware for TraceCapsule: records HTTP request/response bodies, headers, exceptions and trace spans into a redacted .capsule file, with sampling and opt-in [TraceCapsule] endpoint attribution.</Description>
+  </PropertyGroup>
+
 </Project>

@@ -10,4 +10,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Bridges the .NET Activity graph (the same one OpenTelemetry exporters read from) into TraceCapsule's ambient capsule recording, with zero per-call-site instrumentation.</Description>
+  </PropertyGroup>
+
 </Project>

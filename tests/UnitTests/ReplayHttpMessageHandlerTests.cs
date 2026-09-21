@@ -73,7 +73,9 @@ public class ReplayHttpMessageHandlerTests
         await client.GetAsync("https://fraud-api.example/check");
         stopwatch.Stop();
 
-        Assert.True(stopwatch.ElapsedMilliseconds >= 150, $"expected at least 150ms, was {stopwatch.ElapsedMilliseconds}ms");
+        // Task.Delay isn't exact — Windows' default timer resolution (~15ms) can make a
+        // 150ms delay measure a few ms short. Allow that slack rather than chase flakiness.
+        Assert.True(stopwatch.ElapsedMilliseconds >= 130, $"expected at least ~150ms, was {stopwatch.ElapsedMilliseconds}ms");
     }
 
     [Fact]

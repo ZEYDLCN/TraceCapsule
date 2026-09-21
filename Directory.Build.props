@@ -1,0 +1,24 @@
+<Project>
+
+  <!-- Shared package metadata for every packable project under src/. Samples and test
+       projects opt out (IsPackable=false) rather than override all of this. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>ZEYDLCN</Authors>
+    <Company>ZEYDLCN</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>tracecapsule;observability;distributed-tracing;replay;incident-replay;debugging</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- missing XML doc comment: not every public member needs one to ship v0.1 -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <!-- Only src/* projects are packable (samples and tests set IsPackable=false), and they're
+       all exactly two levels below the repo root, so this relative path is safe everywhere. -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+</Project>

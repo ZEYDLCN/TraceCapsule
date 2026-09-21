@@ -18,6 +18,10 @@ TestResults/
 *.capsule
 /samples/**/capsules/
 
+## NuGet packaging output
+/nupkg/
+/tool-test/
+
 ## OS
 .DS_Store
 Thumbs.db

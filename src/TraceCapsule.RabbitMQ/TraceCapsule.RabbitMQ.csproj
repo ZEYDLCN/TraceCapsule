@@ -14,4 +14,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>RabbitMQ.Client v7 publish/consume event recording and a broker-free queue emulator for TraceCapsule, so a capsule's message flow can be replayed without a live RabbitMQ.</Description>
+  </PropertyGroup>
+
 </Project>

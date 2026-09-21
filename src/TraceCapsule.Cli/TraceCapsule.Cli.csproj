@@ -15,4 +15,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>tracecapsule</ToolCommandName>
+    <PackageId>TraceCapsule.Cli</PackageId>
+    <Description>tracecapsule: inspect, replay, compare, export and merge TraceCapsule .capsule files from the command line. Install with `dotnet tool install -g TraceCapsule.Cli`.</Description>
+  </PropertyGroup>
+
 </Project>

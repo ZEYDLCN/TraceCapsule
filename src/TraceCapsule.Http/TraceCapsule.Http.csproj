@@ -14,4 +14,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Outbound HttpClient recording (including timeouts/connection failures) and replay-time response mocking for TraceCapsule, with Phase 6 fault-injection support.</Description>
+  </PropertyGroup>
+
 </Project>

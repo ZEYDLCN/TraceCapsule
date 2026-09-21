@@ -4,7 +4,7 @@ namespace TraceCapsule.RabbitMQ;
 
 /// <summary>Thin RabbitMQ.Client adapter: publish exactly as you normally would, but also
 /// record the event into the ambient capsule. This is intentionally a one-line wrapper
-/// around <see cref="IChannel.BasicPublishAsync{TProperties}"/> — all the actual recording
+/// around <c>IChannel.BasicPublishAsync</c> — all the actual recording
 /// logic lives in <see cref="QueueEventRecorder"/>, which has no RabbitMQ.Client dependency
 /// and is what the unit tests exercise.</summary>
 public static class RecordingChannelExtensions
