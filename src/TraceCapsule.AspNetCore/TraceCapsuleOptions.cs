@@ -26,17 +26,19 @@ public sealed class TraceCapsuleOptions
 
     /// <summary>Request header used to force-capture a specific request regardless of the
     /// sampling policy — <c>tracecapsule export --trace</c> tooling sets this.</summary>
-    public string ManualCaptureHeaderName { get; set; } = "X-TraceCapsule-Capture";
+    public string ManualCaptureHeaderName { get; set; } = Core.TraceCapsuleHeaders.ManualCapture;
 
     /// <summary>Request/response header that carries the distributed-execution session id
     /// so downstream services' partial capsules can be merged (Phase 5). Auto-generated for
-    /// the entry-point service if absent on the inbound request.</summary>
-    public string SessionHeaderName { get; set; } = "X-TraceCapsule-Session";
+    /// the entry-point service if absent on the inbound request, and forwarded onto outbound
+    /// calls by <c>RecordingHttpMessageHandler</c> so it actually reaches the next hop.</summary>
+    public string SessionHeaderName { get; set; } = Core.TraceCapsuleHeaders.Session;
 
-    /// <summary>Request header carrying Phase 6 fault-injection instructions across the
-    /// CLI → target-app process boundary, e.g. <c>"payment-api=3000,fraud-api=500"</c>.
+    /// <summary>Request header carrying Phase 6 fault-injection instructions across process
+    /// boundaries (CLI → target app, and service → service), e.g.
+    /// <c>"payment-api=3000,fraud-api=500"</c>.
     /// See <see cref="Core.Fault.FaultInjectionOptions.ParseHeaderValue"/>.</summary>
-    public string FaultHeaderName { get; set; } = "X-TraceCapsule-Fault-Latency";
+    public string FaultHeaderName { get; set; } = Core.TraceCapsuleHeaders.FaultLatency;
 
     /// <summary>Caps how much of a request/response body is captured, to keep large
     /// payloads from blowing up capsule size or process memory. Bodies longer than this are

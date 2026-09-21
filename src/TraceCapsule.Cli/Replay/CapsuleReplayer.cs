@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using TraceCapsule.Core;
 using TraceCapsule.Core.Fault;
 using TraceCapsule.Core.Model;
 using TraceCapsule.Core.Recording;
@@ -16,9 +17,6 @@ namespace TraceCapsule.Cli.Replay;
 /// (already wired with TraceCapsule) replays everything *inside* it.</summary>
 public static class CapsuleReplayer
 {
-    public const string FaultHeaderName = "X-TraceCapsule-Fault-Latency";
-    public const string SessionHeaderName = "X-TraceCapsule-Session";
-
     private static readonly HashSet<string> SkippedRequestHeaders = new(StringComparer.OrdinalIgnoreCase)
     {
         "host", "content-length", "content-type", "connection", "transfer-encoding",
@@ -41,7 +39,7 @@ public static class CapsuleReplayer
             message.Headers.TryAddWithoutValidation(name, values);
         }
         var faultHeader = faults.ToHeaderValue();
-        if (!string.IsNullOrEmpty(faultHeader)) message.Headers.TryAddWithoutValidation(FaultHeaderName, faultHeader);
+        if (!string.IsNullOrEmpty(faultHeader)) message.Headers.TryAddWithoutValidation(TraceCapsuleHeaders.FaultLatency, faultHeader);
 
         var startedAt = DateTimeOffset.UtcNow;
         var stopwatch = Stopwatch.StartNew();

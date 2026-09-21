@@ -174,7 +174,14 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
     {
         try
         {
-            var fileName = $"{capsule.Metadata.TraceId}.capsule";
+            // Distributed traces (Phase 5) give every participating service the *same*
+            // trace id via standard W3C trace-context propagation (ASP.NET Core's hosting
+            // instrumentation + HttpClient both do this automatically) — naming the file
+            // after the trace id alone would let each service's write clobber the previous
+            // one's. The random suffix keeps every service's partial capsule as its own file;
+            // lookups (`tracecapsule export`) match on Metadata.TraceId, not the file name.
+            var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
+            var fileName = $"{capsule.Metadata.TraceId}-{uniqueSuffix}.capsule";
             var path = Path.Combine(_options.OutputDirectory, fileName);
             await CapsuleWriter.WriteAsync(capsule, path);
             logger.LogInformation("TraceCapsule wrote {Path}", path);

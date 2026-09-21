@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\samples\SimpleApi\SimpleApi.csproj" />
     <ProjectReference Include="..\..\src\TraceCapsule.Core\TraceCapsule.Core.csproj" />
     <ProjectReference Include="..\..\src\TraceCapsule.OpenTelemetry\TraceCapsule.OpenTelemetry.csproj" />
+    <ProjectReference Include="..\..\samples\DistributedTransferDemo\DistributedTransferDemo.csproj" />
   </ItemGroup>
 
 </Project>

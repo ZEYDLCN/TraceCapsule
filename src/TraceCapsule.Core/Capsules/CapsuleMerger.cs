@@ -14,11 +14,17 @@ public static class CapsuleMerger
         if (parts.Count == 0) throw new ArgumentException("At least one capsule is required to merge.", nameof(parts));
         if (parts.Count == 1) return parts.Single();
 
-        var traceIds = parts.Select(p => p.Metadata.TraceId).Distinct().ToList();
-        if (traceIds.Count > 1)
+        // SessionId (propagated explicitly via the X-TraceCapsule-Session header) is the
+        // authoritative "same distributed execution" key — real services each get their own
+        // local trace id unless W3C trace-context propagation happens to align them, which
+        // this doesn't assume. Capsules with no SessionId at all (e.g. two independent,
+        // single-service capsules a caller mistakenly tried to merge) fall back to requiring
+        // matching trace ids instead.
+        var keys = parts.Select(p => p.Metadata.SessionId ?? p.Metadata.TraceId).Distinct().ToList();
+        if (keys.Count > 1)
         {
             throw new InvalidOperationException(
-                $"Cannot merge capsules with different trace ids: {string.Join(", ", traceIds)}. " +
+                $"Cannot merge capsules from different sessions/traces: {string.Join(", ", keys)}. " +
                 "Merge only combines partial capsules from the same distributed execution.");
         }
 

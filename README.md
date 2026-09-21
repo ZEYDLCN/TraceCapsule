@@ -719,29 +719,41 @@ TraceCapsule/
   docs/
 ```
 
-This matches the current state of the repo — the solution (`TraceCapsule.sln`) wires all of the above together; only `TraceCapsule.Core` through `TraceCapsule.Cli` currently contain scaffolding, no recording/replay logic yet (see [docs/roadmap.md](docs/roadmap.md)).
+This matches the current state of the repo — the solution (`TraceCapsule.sln`) wires all of the above together, and every phase in [docs/roadmap.md](docs/roadmap.md) has a real, tested implementation: capsule recording/redaction/writing (`Core`), the ASP.NET Core middleware (`AspNetCore`), span capture (`OpenTelemetry`), outbound HTTP recording + replay + fault injection (`Http`), RabbitMQ event recording + the queue emulator (`RabbitMQ`), and the `inspect`/`replay`/`compare`/`export`/`merge` CLI (`Cli`). `SimpleApi` and `DistributedTransferDemo` are runnable, not placeholders.
 
 ## Demo Application
 
-Demo için küçük bir banking workflow kurulabilir:
+`samples/DistributedTransferDemo` is a real, runnable banking workflow — three ASP.NET Core
+services (Transfer, Fraud, Payment), each independently wired with TraceCapsule, hosted on
+three loopback ports in one process:
 
 ```
 Client
   ↓
-Transfer API
+Transfer API  →  Fraud API
   ↓
-Fraud API
-  ↓
-RabbitMQ
-  ↓
-Payment Worker
-  ↓
-Mock Banking API
+Payment API
 ```
 
-Sonra intentional bir bug (Payment API timeout) oluşturulur. TraceCapsule `incident.capsule` üretir. Developer `tracecapsule replay incident.capsule` ile aynı bug'ı localde yeniden oluşturur.
+```bash
+dotnet run --project samples/DistributedTransferDemo
+```
 
-`samples/DistributedTransferDemo` bu senaryonun ev sahibi olacak — şu an için boş bir Web API iskeleti.
+A normal transfer (`"amount": 100`) completes cleanly. A transfer of `"amount": 5000` or more
+hits an intentional bug: Payment's handler sleeps 5 seconds while Transfer's HttpClient only
+allows 2, reproducing a real timeout without any manual fault injection — exactly the
+`PaymentService.ReserveBalance` / `TimeoutException` scenario from this README's own
+motivating example. Each service writes its own partial capsule (they share a trace id via
+standard W3C trace-context propagation, and a session id via the `X-TraceCapsule-Session`
+header as a fallback for hops that don't propagate it), and:
+
+```bash
+tracecapsule merge <session-id> --from <capsules-dir>
+```
+
+combines the three into one complete artifact — `tracecapsule inspect` on it shows all three
+services, the failing `payment-api` external call (recorded even though it timed out, with
+no response), and the exception, all in one place.
 
 ## Pitch
 

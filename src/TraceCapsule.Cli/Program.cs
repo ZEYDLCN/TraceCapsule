@@ -61,20 +61,43 @@ var traceOption = new Option<string>("--trace") { Required = true, Description =
 var fromOption = new Option<string>("--from") { Description = "Directory TraceCapsule writes .capsule files to", DefaultValueFactory = _ => "capsules" };
 var exportToOption = new Option<string?>("--to", "-o") { Description = "Copy the capsule to this path instead of just reporting where it already is" };
 
-var export = new Command("export", "Locate the capsule TraceCapsule already wrote for a given trace id");
+var export = new Command("export", "Locate the capsule(s) TraceCapsule already wrote for a given trace id");
 export.Add(traceOption);
 export.Add(fromOption);
 export.Add(exportToOption);
-export.SetAction(parseResult =>
+export.SetAction(async (parseResult, cancellationToken) =>
 {
     var traceId = parseResult.GetValue(traceOption)!;
     var fromDir = parseResult.GetValue(fromOption)!;
-    var found = Path.Combine(fromDir, $"{traceId}.capsule");
-    if (!File.Exists(found))
+    if (!Directory.Exists(fromDir))
+    {
+        Console.Error.WriteLine($"Directory '{fromDir}' does not exist.");
+        return 1;
+    }
+
+    // File names carry a random per-write suffix so services sharing a trace id (Phase 5)
+    // never clobber each other's capsule — so matching has to read Metadata.TraceId back
+    // out of each candidate rather than assume a fixed file name.
+    var matches = new List<string>();
+    foreach (var file in Directory.EnumerateFiles(fromDir, "*.capsule"))
+    {
+        var capsule = await CapsuleReader.ReadAsync(file, cancellationToken);
+        if (capsule.Metadata.TraceId == traceId) matches.Add(file);
+    }
+
+    if (matches.Count == 0)
     {
         Console.Error.WriteLine($"No capsule found for trace '{traceId}' in '{fromDir}'.");
         return 1;
     }
+    if (matches.Count > 1)
+    {
+        Console.WriteLine($"{matches.Count} capsules share trace '{traceId}' (a distributed execution) — use `tracecapsule merge` to combine them, or pick one:");
+        foreach (var match in matches) Console.WriteLine($"  {match}");
+        return 0;
+    }
+
+    var found = matches[0];
     var to = parseResult.GetValue(exportToOption);
     if (to is not null)
     {
