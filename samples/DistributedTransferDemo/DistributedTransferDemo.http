@@ -1,0 +1,6 @@
+@DistributedTransferDemo_HostAddress = http://localhost:5206
+
+GET {{DistributedTransferDemo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

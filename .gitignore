@@ -1,0 +1,23 @@
+## .NET
+bin/
+obj/
+out/
+
+## IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+## Test / coverage results
+TestResults/
+*.trx
+*.coverage
+
+## Capsule artifacts produced at runtime
+*.capsule
+/samples/**/capsules/
+
+## OS
+.DS_Store
+Thumbs.db
