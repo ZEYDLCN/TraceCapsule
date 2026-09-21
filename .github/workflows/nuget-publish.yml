@@ -1,0 +1,119 @@
+name: Publish NuGet packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nuget-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from tag
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $version = & ./.github/scripts/Get-ReleaseVersion.ps1 -Tag $env:RELEASE_TAG
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: dotnet restore TraceCapsule.sln -p:Version="$env:RELEASE_VERSION"
+
+      - name: Build
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: dotnet build TraceCapsule.sln --no-restore --configuration Release -p:Version="$env:RELEASE_VERSION"
+
+      - name: Test
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: dotnet test TraceCapsule.sln --no-build --configuration Release -p:Version="$env:RELEASE_VERSION" --logger trx --results-directory TestResults/release
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-test-results
+          path: TestResults/release/**/*.trx
+          if-no-files-found: warn
+
+      - name: Pack
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: dotnet pack TraceCapsule.sln --no-build --configuration Release -p:Version="$env:RELEASE_VERSION" --output ./nupkg/release
+
+      - name: Verify package versions and dependencies
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./.github/scripts/Test-ReleasePackages.ps1 -Directory ./nupkg/release -Version $env:RELEASE_VERSION
+
+      - name: Upload release packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-${{ steps.version.outputs.version }}
+          path: |
+            nupkg/release/*.nupkg
+            nupkg/release/*.snupkg
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download tested packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-${{ needs.build.outputs.version }}
+          path: ./nupkg
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: NuGet login using Trusted Publishing
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ZeydAlcan
+
+      - name: Publish packages and symbols
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          $packages = 'Core', 'AspNetCore', 'Http', 'OpenTelemetry', 'RabbitMQ', 'Cli'
+          foreach ($package in $packages) {
+            $path = "./nupkg/TraceCapsule.$package.$env:RELEASE_VERSION.nupkg"
+            dotnet nuget push $path --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }

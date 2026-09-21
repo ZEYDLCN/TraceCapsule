@@ -9,7 +9,7 @@
     <PackageProjectUrl>https://github.com/ZEYDLCN/TraceCapsule</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ZEYDLCN/TraceCapsule</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>Initial beta: HTTP recording, redaction, replay, CLI reports and distributed capsule merging. Full distributed deterministic replay and live RabbitMQ broker validation remain incomplete. See docs/test-report.md in the repository for validation scope and limitations.</PackageReleaseNotes>
+    <PackageReleaseNotes>Beta: HTTP recording, redaction, replay environments, structured response comparisons, generated xUnit regression tests, CLI reports and distributed capsule merging. Full distributed deterministic replay and live RabbitMQ broker validation remain incomplete. See the repository documentation for validation scope and limitations.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>tracecapsule;observability;distributed-tracing;replay;incident-replay;debugging</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>

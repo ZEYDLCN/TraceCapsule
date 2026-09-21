@@ -101,6 +101,36 @@ format, privacy model, etc).
   `RedactionPolicyLoaderTests`, including the README's own YAML example verified to redact
   exactly as documented.
 
+## Phase 8 — Regression test generation ✅
+
+- **One-call HTTP mock/test-environment setup** (`TraceCapsule.Http`'s
+  `AddTraceCapsuleReplayEnvironment(capsule)`): registers a named `HttpClient` wired to
+  `AddTraceCapsuleReplay` for every dependency the capsule actually recorded an external call
+  for, so a test host doesn't have to know the dependency names up front or call
+  `AddTraceCapsuleReplay` once per dependency. Tested in `CapsuleReplayEnvironmentTests`.
+- **Structural response-body comparison** (`TraceCapsule.Core.Comparison.JsonBodyDiff`):
+  walks two JSON bodies together and reports only the paths that actually disagree, instead
+  of a byte-for-byte compare that would flag every replay as a mismatch purely from fields
+  that are *expected* to vary (timestamps, generated ids). `ignoredPaths` lets the caller
+  name the volatile ones up front, with `*` as a wildcard segment (e.g.
+  `"$.items[*].updatedAt"`). `tracecapsule compare` now diffs the response body this way too
+  (`--ignore-body-field`, repeatable). Tested in `JsonBodyDiffTests` and
+  `CapsuleComparerTests`.
+- **`tracecapsule generate-test <bug.capsule> <fixed.capsule> --output <Test.cs>`**
+  (`TraceCapsule.Cli.GenerateTest.RegressionTestGenerator`): turns the original production
+  capsule and a replay result recorded after verifying the fix into a self-contained xUnit
+  test file — the recorded request, the original failure signature (status code/exception
+  type), and the now-expected response are all baked into the source as literals, so the
+  generated test has no run-time dependency on this CLI or on any capsule file. It replays
+  the request against a live target read from an environment variable (default
+  `TRACECAPSULE_TARGET_URL`, override with `--target-url-env`), asserts the original failure
+  no longer reproduces, and (via `JsonBodyDiff`) that the response body now matches modulo
+  `--ignore-body-field`. Just another test in the suite from there — safe to commit and run
+  in CI like any other, as long as CI starts the target before `dotnet test`. Verified
+  end-to-end (generated file built and run against a real loopback server, both failing while
+  the bug still reproduces and passing once it doesn't) in addition to
+  `RegressionTestGeneratorTests`.
+
 ## What's genuinely out of scope (by design, not oversight)
 
 - **Database/Redis state snapshot + replay, time travel.** Mentioned in the README's

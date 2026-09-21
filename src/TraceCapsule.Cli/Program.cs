@@ -1,6 +1,7 @@
 using System.CommandLine;
 using TraceCapsule.Cli;
 using TraceCapsule.Cli.Compare;
+using TraceCapsule.Cli.GenerateTest;
 using TraceCapsule.Cli.Replay;
 using TraceCapsule.Cli.Report;
 using TraceCapsule.Core.Analysis;
@@ -56,15 +57,22 @@ replay.SetAction(async (parseResult, cancellationToken) =>
 
 var productionPathArgument = new Argument<string>("production") { Description = "The original (production) .capsule" };
 var replayPathArgument = new Argument<string>("replay") { Description = "The replay result .capsule (from `tracecapsule replay`)" };
+var ignoreBodyFieldOption = new Option<string[]>("--ignore-body-field")
+{
+    Description = "Exclude a JSON path from the response body diff, e.g. $.createdAt (supports * as a wildcard segment, e.g. $.items[*].updatedAt)",
+    AllowMultipleArgumentsPerToken = true,
+};
 
 var compare = new Command("compare", "Diff a production capsule against a replay result");
 compare.Add(productionPathArgument);
 compare.Add(replayPathArgument);
+compare.Add(ignoreBodyFieldOption);
 compare.SetAction(async (parseResult, cancellationToken) =>
 {
     var production = await CapsuleReader.ReadAsync(parseResult.GetValue(productionPathArgument)!, cancellationToken);
     var replayResult = await CapsuleReader.ReadAsync(parseResult.GetValue(replayPathArgument)!, cancellationToken);
-    var report = CapsuleComparer.Compare(production, replayResult);
+    var ignoreBodyFields = parseResult.GetValue(ignoreBodyFieldOption) ?? [];
+    var report = CapsuleComparer.Compare(production, replayResult, ignoreBodyFields);
     CapsuleFormatting.PrintCompareReport(report);
     return report.AllMatch ? 0 : 1;
 });
@@ -153,11 +161,55 @@ merge.SetAction(async (parseResult, cancellationToken) =>
     return 0;
 });
 
+var bugPathArgument = new Argument<string>("bug") { Description = "The original (production) .capsule showing the failure" };
+var fixedPathArgument = new Argument<string>("fixed") { Description = "A replay result .capsule (from `tracecapsule replay`) recorded after verifying the fix" };
+var generateTestOutputOption = new Option<string>("--output", "-o") { Required = true, Description = "Where to write the generated xUnit test .cs file" };
+var testNamespaceOption = new Option<string>("--namespace") { Description = "Namespace for the generated test class", DefaultValueFactory = _ => "TraceCapsule.GeneratedTests" };
+var testClassNameOption = new Option<string?>("--class-name") { Description = "Name for the generated test class (default: derived from the trace id)" };
+var targetUrlEnvOption = new Option<string>("--target-url-env") { Description = "Environment variable the generated test reads the target base URL from at run time", DefaultValueFactory = _ => "TRACECAPSULE_TARGET_URL" };
+
+var generateTest = new Command("generate-test", "Generate a self-contained xUnit test proving a recorded bug no longer reproduces");
+generateTest.Add(bugPathArgument);
+generateTest.Add(fixedPathArgument);
+generateTest.Add(generateTestOutputOption);
+generateTest.Add(ignoreBodyFieldOption);
+generateTest.Add(testNamespaceOption);
+generateTest.Add(testClassNameOption);
+generateTest.Add(targetUrlEnvOption);
+generateTest.SetAction(async (parseResult, cancellationToken) =>
+{
+    var bug = await CapsuleReader.ReadAsync(parseResult.GetValue(bugPathArgument)!, cancellationToken);
+    var fixedCapsule = await CapsuleReader.ReadAsync(parseResult.GetValue(fixedPathArgument)!, cancellationToken);
+    var className = parseResult.GetValue(testClassNameOption)
+        ?? $"Bug_{RegressionTestGenerator.SanitizeIdentifier(bug.Metadata.TraceId)}_RegressionTest";
+
+    try
+    {
+        var source = RegressionTestGenerator.Generate(
+            bug,
+            fixedCapsule,
+            parseResult.GetValue(testNamespaceOption)!,
+            className,
+            parseResult.GetValue(ignoreBodyFieldOption) ?? [],
+            parseResult.GetValue(targetUrlEnvOption)!);
+        var outputPath = parseResult.GetValue(generateTestOutputOption)!;
+        await File.WriteAllTextAsync(outputPath, source, cancellationToken);
+        Console.WriteLine($"Regression test written to: {outputPath}");
+        return 0;
+    }
+    catch (InvalidOperationException ex)
+    {
+        Console.Error.WriteLine(ex.Message);
+        return 1;
+    }
+});
+
 var root = new RootCommand("TraceCapsule — turn production failures into replayable execution artifacts.");
 root.Add(inspect);
 root.Add(replay);
 root.Add(compare);
 root.Add(export);
 root.Add(merge);
+root.Add(generateTest);
 
 return await root.Parse(args).InvokeAsync();

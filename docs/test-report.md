@@ -1,5 +1,27 @@
 # Uçtan uca test raporu — 21 Eylül 2026
 
+## Sonraki doğrulama: test üretimi ve otomatik yayınlama
+
+JSON karşılaştırması, HTTP replay ortamı ve test üretimi eklendikten sonra bulunan üç hata
+düzeltildi: üretilen testte charset ayrıştırması, HTTP kodu aynı kalan düzeltmede çelişen
+assertion ve eşdeğer JSON string kaçışlarının farklı sayılması.
+
+Son Release çalıştırması: **144/144 başarılı** (75 unit, 24 integration, 45 replay; atlanan yok).
+Kalıcı test, generator'ın ürettiği C# dosyalarını ayrı bir projede derliyor ve gerçek yerel
+HTTP bağlantılarıyla çalıştırıyor. UTF-8, tırnaklı ISO-8859-1 charset, aynı/değişen HTTP kodu,
+Unicode kaçışları, değişken alanları hariç tutma ve yanlış yanıt geri geldiğinde testin
+başarısız olması doğrulandı.
+
+`0.1.0-beta.2` sürüm geçersiz kılmasıyla testler tekrar geçti; altı paket ve sembolleri
+oluşturuldu, paket sürümleri ve iç bağımlılıkları doğrulandı. `actionlint 1.7.12` iki workflow'u
+hatasız doğruladı. Geçerli/geçersiz etiketler ve yanlış paket sürümünün reddedilmesi kontrol
+edildi. Son çıktılar `TestResults/automation-fixes/` ve `TestResults/release-preflight/` altında.
+
+GitHub OIDC yayını uzaktan çalıştırılmadı; [yayınlama rehberindeki](publishing.md) tek seferlik
+hesap bağlantısı ve kullanıcının commit/tag push işlemi gerekiyor. Bu doğrulamada yayın yapılmadı.
+
+## İlk uçtan uca test turu
+
 Windows 10 üzerinde .NET SDK 9.0.300, .NET 8.0.16 runtime ve Release yapılandırmasıyla çalıştırıldı. Commit veya push yapılmadı.
 
 | Test grubu | İlk durum | Son durum | Başarısız / atlanan |

@@ -5,10 +5,10 @@ namespace TraceCapsule.ReplayTests;
 
 public class CapsuleComparerTests
 {
-    private static Capsule Build(int? statusCode, string? exceptionType = null, string spanStatus = "Ok") => new()
+    private static Capsule Build(int? statusCode, string? exceptionType = null, string spanStatus = "Ok", string? body = null) => new()
     {
         Metadata = new CapsuleMetadata { TraceId = "t" },
-        Response = statusCode is null ? null : new HttpResponseRecord { StatusCode = statusCode.Value },
+        Response = statusCode is null ? null : new HttpResponseRecord { StatusCode = statusCode.Value, Body = body },
         Exceptions = exceptionType is null ? [] : [new ExceptionRecord { Type = exceptionType, Message = "x" }],
         Trace = [new SpanRecord { SpanId = "s1", Name = "PaymentService.ReserveBalance", Status = spanStatus }],
     };
@@ -45,5 +45,43 @@ public class CapsuleComparerTests
         var report = CapsuleComparer.Compare(Build(200, spanStatus: "Error"), Build(200, spanStatus: "Ok"));
         var spanLine = Assert.Single(report.Lines, l => l.Label.Contains("PaymentService.ReserveBalance"));
         Assert.False(spanLine.IsMatch);
+    }
+
+    [Fact]
+    public void Reports_a_match_when_response_bodies_are_structurally_equal()
+    {
+        var report = CapsuleComparer.Compare(
+            Build(200, body: """{"riskScore":81}"""),
+            Build(200, body: """{"riskScore":81}"""));
+        Assert.True(report.AllMatch);
+    }
+
+    [Fact]
+    public void Reports_a_body_mismatch_with_the_json_path_that_differs()
+    {
+        var report = CapsuleComparer.Compare(
+            Build(200, body: """{"riskScore":81}"""),
+            Build(200, body: """{"riskScore":42}"""));
+        var bodyLine = Assert.Single(report.Lines, l => l.Label == "Body $.riskScore");
+        Assert.False(bodyLine.IsMatch);
+        Assert.Equal("81", bodyLine.ProductionValue);
+        Assert.Equal("42", bodyLine.ReplayValue);
+    }
+
+    [Fact]
+    public void Ignores_volatile_body_fields_named_via_ignoreBodyPaths()
+    {
+        var report = CapsuleComparer.Compare(
+            Build(200, body: """{"status":"ok","createdAt":"2026-01-01"}"""),
+            Build(200, body: """{"status":"ok","createdAt":"2026-09-21"}"""),
+            ["$.createdAt"]);
+        Assert.True(report.AllMatch);
+    }
+
+    [Fact]
+    public void Does_not_add_a_body_line_when_neither_side_recorded_a_response()
+    {
+        var report = CapsuleComparer.Compare(Build(null), Build(null));
+        Assert.DoesNotContain(report.Lines, l => l.Label.StartsWith("Body") || l.Label == "Response body");
     }
 }

@@ -22,6 +22,9 @@ JSON fields and headers; it does not guarantee removal of secrets from arbitrary
 query strings, exceptions, or span tags. See [the test report](https://github.com/ZEYDLCN/TraceCapsule/blob/master/docs/test-report.md)
 for the tested scenarios and remaining limitations.
 
+Maintainers: [automatic NuGet publishing](docs/publishing.md) uses version tags and GitHub
+Actions with NuGet Trusted Publishing.
+
 **TraceCapsule**, production ortamında oluşan hataları sanitize edilmiş, taşınabilir ve yeniden oynatılabilir bir `.capsule` dosyasına dönüştüren bir **debugging ve replay SDK/library** projesidir.
 
 Amaç, production'da oluşan bir bug'ı sadece loglardan incelemek yerine mümkün olduğunca aynı execution context ile local veya test ortamında yeniden üretmektir.
@@ -497,6 +500,41 @@ PaymentService.ReserveBalance
 self-contained, shareable HTML page — status, metrics, analysis findings, exceptions with
 stack traces, a span waterfall, external-call/queue-event tables, and the (already-redacted)
 request/response bodies — instead of only ever reading text in a terminal.
+
+**Response body diffing:** `tracecapsule compare` also diffs the response body structurally
+(field by field, not byte by byte), so fields that are expected to vary between runs don't
+show up as noise:
+
+```bash
+tracecapsule compare error.capsule replay-result.capsule --ignore-body-field '$.createdAt'
+```
+
+`--ignore-body-field` is repeatable and accepts `*` as a wildcard segment (e.g.
+`'$.items[*].updatedAt'` to ignore that field on every array element).
+
+**Regression test generation:** once a fix has been verified locally (replay the bug capsule
+against the fixed target, saving the result), turn both capsules into a self-contained xUnit
+test that proves the bug stays fixed:
+
+```bash
+tracecapsule replay error.capsule --target-url http://localhost:5000 --output fixed.capsule
+tracecapsule generate-test error.capsule fixed.capsule --output BugRegressionTest.cs \
+  --ignore-body-field '$.transferId' --ignore-body-field '$.completedAt'
+```
+
+The generated test has no dependency on this CLI or on any capsule file at run time — the
+recorded request, the original failure signature, and the now-expected response are baked in
+as literals. It reads its target's base URL from the `TRACECAPSULE_TARGET_URL` environment
+variable (override the variable name with `--target-url-env`), so a CI job just needs to
+start the target before `dotnet test` runs. If the target replays external dependencies too,
+wire them up with one call from `TraceCapsule.Http`:
+
+```csharp
+services.AddTraceCapsuleReplayEnvironment(capsule);
+```
+
+which registers a named `HttpClient` for every dependency the capsule recorded, each serving
+recorded responses instead of hitting the network.
 
 ## Developer Integration
 

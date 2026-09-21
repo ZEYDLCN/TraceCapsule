@@ -13,6 +13,7 @@ public sealed class FakeHttpServer : IDisposable
     public string? LastReceivedFaultHeader { get; private set; }
     public string? LastReceivedPath { get; private set; }
     public string? LastReceivedBody { get; private set; }
+    public string? LastReceivedContentType { get; private set; }
 
     public FakeHttpServer()
     {
@@ -28,7 +29,8 @@ public sealed class FakeHttpServer : IDisposable
         var context = await _listener.GetContextAsync();
         LastReceivedPath = context.Request.Url?.PathAndQuery;
         LastReceivedFaultHeader = context.Request.Headers["X-TraceCapsule-Fault-Latency"];
-        using (var reader = new StreamReader(context.Request.InputStream))
+        LastReceivedContentType = context.Request.ContentType;
+        using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
         {
             LastReceivedBody = await reader.ReadToEndAsync();
         }
