@@ -49,6 +49,11 @@ public sealed class TraceCapsuleMiddlewareTests : IDisposable
         var exception = Assert.Single(capsule.Exceptions);
         Assert.Equal("System.InvalidOperationException", exception.Type);
         Assert.Contains("simulated failure", exception.Message);
+        // The framework's "turn an unhandled exception into a 500" logic runs outside this
+        // middleware's own frame, so context.Response.StatusCode is never actually mutated —
+        // the capsule must still reflect the 500 the caller really saw.
+        Assert.Equal(500, capsule.Response!.StatusCode);
+        Assert.Equal("Error", capsule.Trace[0].Status);
     }
 
     [Fact]

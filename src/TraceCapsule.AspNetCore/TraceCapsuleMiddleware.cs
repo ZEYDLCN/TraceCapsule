@@ -114,6 +114,13 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
         var exceptions = recording.Exceptions.ToList();
         var trace = recording.Spans.OrderBy(s => s.StartTime).ToList();
 
+        // When the pipeline throws, the framework's own "turn this into a 500" logic runs
+        // in the host, *outside* this middleware's frame — context.Response.StatusCode is
+        // still whatever it was before the exception (typically the 200 default) by the
+        // time our finally block runs. Reflect what the caller will actually see instead of
+        // trusting a status code the response never got to set.
+        var effectiveStatusCode = exceptions.Count > 0 && response.StatusCode < 500 ? 500 : response.StatusCode;
+
         // The request's own root Activity (ASP.NET Core's hosting instrumentation) only
         // *stops* after this middleware's own finally block has already run, so
         // CapsuleActivityListener can never observe it in time. Synthesize it here instead —
@@ -131,7 +138,7 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
                 StartTime = startedAt,
                 EndTime = startedAt + duration,
                 DurationMs = duration.TotalMilliseconds,
-                Status = exceptions.Count > 0 || response.StatusCode >= 500 ? "Error" : "Ok",
+                Status = effectiveStatusCode >= 500 ? "Error" : "Ok",
             });
         }
 
@@ -143,7 +150,7 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
                 SessionId = sessionId,
                 Timestamp = startedAt,
                 Request = new RequestInfo { Method = request.Method, Path = request.Path },
-                Services = [context.RequestServices.GetService<IHostEnvironmentProvider>()?.ServiceName ?? "service"],
+                Services = [context.RequestServices.GetService<IHostEnvironmentProvider>()?.ServiceName ?? _options.AppVersion],
                 Environment = new EnvironmentInfo { AppVersion = _options.AppVersion },
             },
             Request = new HttpRequestRecord
@@ -153,7 +160,7 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
             },
             Response = new HttpResponseRecord
             {
-                StatusCode = response.StatusCode, Headers = responseHeaders, Body = responseBody, ContentType = response.ContentType,
+                StatusCode = effectiveStatusCode, Headers = responseHeaders, Body = responseBody, ContentType = response.ContentType,
             },
             Trace = trace,
             ExternalHttpCalls = recording.ExternalHttpCalls.OrderBy(c => c.Timestamp).ToList(),
