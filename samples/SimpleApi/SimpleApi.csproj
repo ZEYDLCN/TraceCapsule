@@ -16,4 +16,10 @@
     <ProjectReference Include="..\..\src\TraceCapsule.OpenTelemetry\TraceCapsule.OpenTelemetry.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="redaction.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

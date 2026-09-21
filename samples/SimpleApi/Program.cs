@@ -1,4 +1,5 @@
 using TraceCapsule.AspNetCore;
+using TraceCapsule.Core.Redaction;
 using TraceCapsule.OpenTelemetry;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,11 +8,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Redaction policy loaded from a YAML file (the README's own example) instead of hardcoded
+// in Program.cs — see redaction.yaml next to this file.
+var redactionPolicyPath = Path.Combine(builder.Environment.ContentRootPath, "redaction.yaml");
+var redactionPolicy = File.Exists(redactionPolicyPath) ? RedactionPolicyLoader.FromFile(redactionPolicyPath) : RedactionPolicy.Default();
+
 builder.Services.AddTraceCapsule(options =>
 {
     options.EnableHttpRecording = true;
     options.EnableOpenTelemetry = true;
     options.EnableRedaction = true;
+    options.RedactionPolicy = redactionPolicy;
     options.OutputDirectory = Path.Combine(builder.Environment.ContentRootPath, "capsules");
     options.AppVersion = "SimpleApi/1.0";
     options.CapturePolicy.SamplingRate = 1.0; // demo: record everything, don't rely on random sampling

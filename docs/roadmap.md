@@ -82,6 +82,25 @@ format, privacy model, etc).
   proven end to end in `DeterminismReplayTests`: the real returned payment id/timestamp are
   what the capsule recorded, and a fresh replay instance reproduces them exactly.
 
+- **HTML capsule report** (`tracecapsule inspect <path> --html <output>`,
+  `TraceCapsule.Cli.Report.HtmlReportBuilder`): a self-contained, shareable HTML page — no
+  external stylesheets/scripts/fonts — rendering the header/status, metrics, Phase 7 analysis
+  findings, exceptions with stack traces, a span waterfall, external-call and queue-event
+  tables, and the (already-redacted) request/response bodies. Every value pulled from the
+  capsule is HTML-encoded before being written out, since capsule content originates from a
+  production request and has to be treated as untrusted when rendered as markup. Verified
+  visually against real capsules from `SimpleApi` (a screenshot of an exception capsule and
+  of a redacted request both render correctly), in addition to `HtmlReportBuilderTests`
+  (including a dedicated XSS-encoding test).
+
+- **Redaction policy from a config file** (`TraceCapsule.Core.Redaction.RedactionPolicyLoader`):
+  loads a `RedactionPolicy` from the exact YAML shape the README shows
+  (`redaction: { headers, json_fields, strategies }`, via YamlDotNet) or from a plain JSON
+  file (a direct `RedactionPolicy` serialization). `samples/SimpleApi` now loads its policy
+  from `redaction.yaml` instead of hardcoding it in `Program.cs`. Tested in
+  `RedactionPolicyLoaderTests`, including the README's own YAML example verified to redact
+  exactly as documented.
+
 ## What's genuinely out of scope (by design, not oversight)
 
 - **Database/Redis state snapshot + replay, time travel.** Mentioned in the README's

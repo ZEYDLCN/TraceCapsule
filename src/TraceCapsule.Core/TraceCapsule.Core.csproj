@@ -10,4 +10,8 @@
     <Description>Capsule domain model, policy-driven redaction engine, ZIP-based capsule writer/reader, and capsule merger for TraceCapsule — turn a production execution into a sanitized, portable, replayable artifact.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+
 </Project>

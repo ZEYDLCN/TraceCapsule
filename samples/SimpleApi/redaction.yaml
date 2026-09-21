@@ -1,0 +1,15 @@
+redaction:
+  headers:
+    - Authorization
+    - Cookie
+    - Set-Cookie
+
+  json_fields:
+    - password
+    - token
+    - tcNumber
+    - cardNumber
+
+  strategies:
+    cardNumber: keep_last_4
+    tcNumber: remove

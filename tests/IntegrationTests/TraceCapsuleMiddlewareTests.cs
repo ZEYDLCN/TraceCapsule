@@ -32,6 +32,11 @@ public sealed class TraceCapsuleMiddlewareTests : IDisposable
         Assert.Contains("ACC-102", capsule.Request!.Body);
         Assert.DoesNotContain("sup3r-secret", capsule.Request!.Body);
         Assert.NotEmpty(capsule.Trace);
+        // The root span's name must stay legible ("POST /echo"), not the internal ASP.NET
+        // Core hosting activity name ("Microsoft.AspNetCore.Hosting.HttpRequestIn") that
+        // Activity.Current carries — that's what actually shows up in tracecapsule's
+        // waterfall/HTML report.
+        Assert.Contains(capsule.Trace, s => s.Name == "POST /echo");
     }
 
     [Fact]

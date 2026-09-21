@@ -313,6 +313,11 @@ redaction:
     tcNumber: remove
 ```
 
+> **Implemented:** Bu tam olarak yukarıdaki YAML'ı gerçekten yükleyen bir kod var —
+> `RedactionPolicyLoader.FromFile("redaction.yaml")` (YamlDotNet ile) veya bir JSON dosyasından
+> (`RedactionPolicy`'nin doğrudan serileştirilmiş hâli). `samples/SimpleApi` politikayı
+> `Program.cs` içine gömmek yerine `redaction.yaml`'dan yüklüyor.
+
 ## Deterministic Replay Problem
 
 Production replay'in en zor taraflarından biri execution'ın deterministik olmamasıdır. Örneğin uygulama `DateTime.UtcNow`, `Guid.NewGuid()`, `Random.Next()` kullanıyor olabilir.
@@ -465,6 +470,11 @@ PaymentService.ReserveBalance
   Replay:     Timeout after 2000ms
   MATCH
 ```
+
+**HTML report:** `tracecapsule inspect error.capsule --html report.html` writes a
+self-contained, shareable HTML page — status, metrics, analysis findings, exceptions with
+stack traces, a span waterfall, external-call/queue-event tables, and the (already-redacted)
+request/response bodies — instead of only ever reading text in a terminal.
 
 ## Developer Integration
 

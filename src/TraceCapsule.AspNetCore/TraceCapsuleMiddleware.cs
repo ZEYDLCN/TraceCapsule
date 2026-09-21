@@ -133,7 +133,10 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
             {
                 SpanId = rootSpanId,
                 TraceId = traceId,
-                Name = rootActivity?.DisplayName ?? $"{request.Method} {request.Path}",
+                // Deliberately not rootActivity?.DisplayName: for the ASP.NET Core hosting
+                // activity that's the internal "Microsoft.AspNetCore.Hosting.HttpRequestIn",
+                // which is far less legible in a trace/waterfall than the request itself.
+                Name = $"{request.Method} {request.Path}",
                 ServiceName = _options.AppVersion,
                 StartTime = startedAt,
                 EndTime = startedAt + duration,

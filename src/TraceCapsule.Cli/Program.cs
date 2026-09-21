@@ -2,18 +2,30 @@ using System.CommandLine;
 using TraceCapsule.Cli;
 using TraceCapsule.Cli.Compare;
 using TraceCapsule.Cli.Replay;
+using TraceCapsule.Cli.Report;
 using TraceCapsule.Core.Analysis;
 using TraceCapsule.Core.Capsules;
 using TraceCapsule.Core.Fault;
 
 var pathArgument = new Argument<string>("path") { Description = "Path to a .capsule file" };
+var htmlOption = new Option<string?>("--html") { Description = "Also write a self-contained, shareable HTML report to this path" };
 
 var inspect = new Command("inspect", "Print a summary of a recorded capsule");
 inspect.Add(pathArgument);
+inspect.Add(htmlOption);
 inspect.SetAction(async (parseResult, cancellationToken) =>
 {
     var capsule = await CapsuleReader.ReadAsync(parseResult.GetValue(pathArgument)!, cancellationToken);
-    CapsuleFormatting.PrintInspectSummary(capsule, new HeuristicIncidentAnalyzer().Analyze(capsule));
+    var analysis = new HeuristicIncidentAnalyzer().Analyze(capsule);
+    CapsuleFormatting.PrintInspectSummary(capsule, analysis);
+
+    var htmlPath = parseResult.GetValue(htmlOption);
+    if (htmlPath is not null)
+    {
+        await File.WriteAllTextAsync(htmlPath, HtmlReportBuilder.Build(capsule, analysis), cancellationToken);
+        Console.WriteLine();
+        Console.WriteLine($"HTML report written to: {htmlPath}");
+    }
     return 0;
 });
 
