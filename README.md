@@ -1,5 +1,27 @@
 # TraceCapsule
 
+## Install the beta
+
+Requires .NET 8 or later. Install the ASP.NET Core integration in your application:
+
+```bash
+dotnet add package TraceCapsule.AspNetCore --version 0.1.0-beta.1
+```
+
+Optional integrations are available as `TraceCapsule.Http`, `TraceCapsule.OpenTelemetry`,
+and `TraceCapsule.RabbitMQ`, using the same version. Install the CLI separately:
+
+```bash
+dotnet tool install --global TraceCapsule.Cli --version 0.1.0-beta.1
+tracecapsule --help
+```
+
+This is an early beta. Live RabbitMQ broker integration has not been validated, and merged
+distributed capsules do not yet preserve determinism events. Redaction covers configured
+JSON fields and headers; it does not guarantee removal of secrets from arbitrary text,
+query strings, exceptions, or span tags. See [the test report](https://github.com/ZEYDLCN/TraceCapsule/blob/master/docs/test-report.md)
+for the tested scenarios and remaining limitations.
+
 **TraceCapsule**, production ortamında oluşan hataları sanitize edilmiş, taşınabilir ve yeniden oynatılabilir bir `.capsule` dosyasına dönüştüren bir **debugging ve replay SDK/library** projesidir.
 
 Amaç, production'da oluşan bir bug'ı sadece loglardan incelemek yerine mümkün olduğunca aynı execution context ile local veya test ortamında yeniden üretmektir.

@@ -3,9 +3,13 @@
   <!-- Shared package metadata for every packable project under src/. Samples and test
        projects opt out (IsPackable=false) rather than override all of this. -->
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <Version>0.1.0-beta.1</Version>
     <Authors>ZEYDLCN</Authors>
     <Company>ZEYDLCN</Company>
+    <PackageProjectUrl>https://github.com/ZEYDLCN/TraceCapsule</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ZEYDLCN/TraceCapsule</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Initial beta: HTTP recording, redaction, replay, CLI reports and distributed capsule merging. Full distributed deterministic replay and live RabbitMQ broker validation remain incomplete. See docs/test-report.md in the repository for validation scope and limitations.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>tracecapsule;observability;distributed-tracing;replay;incident-replay;debugging</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
