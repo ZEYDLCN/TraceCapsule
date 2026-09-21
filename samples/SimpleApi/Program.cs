@@ -1,25 +1,48 @@
+using TraceCapsule.AspNetCore;
+using TraceCapsule.OpenTelemetry;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddTraceCapsule(options =>
+{
+    options.EnableHttpRecording = true;
+    options.EnableOpenTelemetry = true;
+    options.EnableRedaction = true;
+    options.OutputDirectory = Path.Combine(builder.Environment.ContentRootPath, "capsules");
+    options.AppVersion = "SimpleApi/1.0";
+    options.CapturePolicy.SamplingRate = 1.0; // demo: record everything, don't rely on random sampling
+});
+CapsuleActivityListener.Enable();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
+app.UseRouting();
+app.UseTraceCapsule();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// Demo endpoints used by the integration tests and by `docs/demo.md` to show recording end
+// to end without needing the full DistributedTransferDemo (Phase 5) wired up.
+app.MapPost("/echo", async (HttpRequest request) =>
+{
+    using var reader = new StreamReader(request.Body);
+    var body = await reader.ReadToEndAsync();
+    return Results.Text(body, "application/json");
+});
+
+app.MapGet("/boom", IResult () => throw new InvalidOperationException("simulated failure for TraceCapsule demo purposes"));
+
 app.Run();
+
+public partial class Program;
