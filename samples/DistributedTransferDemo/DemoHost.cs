@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using TraceCapsule.AspNetCore;
+using TraceCapsule.Core.Determinism;
 using TraceCapsule.Http;
 using TraceCapsule.OpenTelemetry;
 
@@ -83,10 +84,16 @@ public static class DemoHost
         });
         var app = builder.Build();
         app.UseTraceCapsule();
-        app.MapPost("/payments/reserve", async (TransferRequest body) =>
+        app.MapPost("/payments/reserve", async (TransferRequest body, ITraceCapsuleIdGenerator idGenerator, ITraceCapsuleClock clock) =>
         {
+            // Uses the TraceCapsule determinism abstractions (not Guid.NewGuid()/DateTime.UtcNow
+            // directly) so a replay of this capsule reproduces the exact same payment id and
+            // timestamp instead of generating new ones — see the README's "Deterministic
+            // Replay Problem" and docs/roadmap.md's Advanced Features note.
+            var paymentId = idGenerator.NewGuid();
+            var processedAt = clock.UtcNow;
             if (body.Amount >= 5000) await Task.Delay(TimeSpan.FromSeconds(5));
-            return Results.Ok(new { reserved = true });
+            return Results.Ok(new { reserved = true, paymentId, processedAt });
         });
         return app;
     }

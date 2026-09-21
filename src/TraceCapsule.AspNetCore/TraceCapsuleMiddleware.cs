@@ -167,6 +167,7 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
             Events = recording.Events.OrderBy(e => e.Timestamp).ToList(),
             Exceptions = exceptions,
             Timing = new TimingRecord { StartedAt = startedAt, CompletedAt = startedAt + duration, TotalDurationMs = duration.TotalMilliseconds },
+            Determinism = recording.Determinism.OrderBy(d => d.Sequence).ToList(),
         };
     }
 

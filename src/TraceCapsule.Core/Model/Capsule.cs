@@ -40,4 +40,5 @@ public sealed class Capsule
     public List<QueueEventRecord> Events { get; set; } = new();
     public List<ExceptionRecord> Exceptions { get; set; } = new();
     public TimingRecord? Timing { get; set; }
+    public List<DeterminismEventRecord> Determinism { get; set; } = new();
 }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Threading;
 using TraceCapsule.Core.Model;
 
 namespace TraceCapsule.Core.Recording;
@@ -23,12 +24,20 @@ public sealed class CapsuleRecordingContext
     public ConcurrentBag<ExternalHttpCallRecord> ExternalHttpCalls { get; } = [];
     public ConcurrentBag<QueueEventRecord> Events { get; } = [];
     public ConcurrentBag<ExceptionRecord> Exceptions { get; } = [];
+    public ConcurrentBag<DeterminismEventRecord> Determinism { get; } = [];
+
+    private int _determinismSequence = -1;
 
     private CapsuleRecordingContext(string traceId, string? sessionId)
     {
         TraceId = traceId;
         SessionId = sessionId;
     }
+
+    /// <summary>A single counter shared across clock/guid/random calls, so replay can
+    /// reproduce the exact chronological order they happened in rather than just the order
+    /// within each kind.</summary>
+    public int NextDeterminismSequence() => Interlocked.Increment(ref _determinismSequence);
 
     /// <summary>Starts a new ambient recording scope. Dispose the returned handle when the
     /// request completes to restore whatever context (if any) was active before — this

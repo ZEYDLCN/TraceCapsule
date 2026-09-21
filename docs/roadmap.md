@@ -66,11 +66,27 @@ format, privacy model, etc).
   `IIncidentAnalyzer` can be swapped in without touching anything else
 - Tested in `UnitTests`
 
+## Advanced Features implemented ahead of schedule
+
+- **Deterministic replay** (`ITraceCapsuleClock` / `ITraceCapsuleIdGenerator` /
+  `ITraceCapsuleRandom` in `TraceCapsule.Core.Determinism`): the exact abstraction the
+  README's "Deterministic Replay Problem" section describes. `RecordingClock` /
+  `RecordingIdGenerator` / `RecordingRandom` capture every value returned during recording
+  (`Capsule.Determinism`, a `determinism.json` capsule section) with a single sequence
+  counter shared across all three kinds; `ReplayClock` / `ReplayIdGenerator` / `ReplayRandom`
+  hand the identical values back in the same order, throwing a clear
+  `TraceCapsuleDeterminismException` if replay asks for more than was recorded (i.e. the code
+  path diverged). `services.AddTraceCapsuleDeterminismReplay(capsule)` flips a host into
+  replay mode. Wired into `DistributedTransferDemo`'s payment-service (it generates its
+  payment id and timestamp through these instead of `Guid.NewGuid()`/`DateTime.UtcNow`) and
+  proven end to end in `DeterminismReplayTests`: the real returned payment id/timestamp are
+  what the capsule recorded, and a fresh replay instance reproduces them exactly.
+
 ## What's genuinely out of scope (by design, not oversight)
 
-- **Database/Redis state snapshot + replay, deterministic randomness (`ISystemClock`-style
-  time/Guid/Random abstraction), time travel.** Mentioned in the README's "Advanced Features"
-  as future work; none of the current phases depend on them.
+- **Database/Redis state snapshot + replay, time travel.** Mentioned in the README's
+  "Advanced Features" as future work; none of the current phases depend on them, and they'd
+  need their own recording/replay abstraction analogous to determinism's.
 - **A real LLM-backed analyzer.** `HeuristicIncidentAnalyzer` is the reference
   implementation; plugging in a model is a follow-up, not a blocker.
 - **Kafka support.** The architecture (recorder → ambient context → emulator) is

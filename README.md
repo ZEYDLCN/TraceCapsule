@@ -331,6 +331,18 @@ public interface ISystemClock
 
 Replay sırasında `RecordedClock` kullanılır. Aynı yaklaşım `Time`, `Random`, `UUID`, `External API` için uygulanabilir.
 
+> **Implemented:** `TraceCapsule.Core.Determinism` gerçekten bu üç abstraction'ı sağlıyor —
+> `ITraceCapsuleClock`, `ITraceCapsuleIdGenerator`, `ITraceCapsuleRandom`. Uygulama kodu
+> `DateTime.UtcNow`/`Guid.NewGuid()`/`Random.Next()` yerine bunları enjekte eder;
+> `RecordingClock`/`RecordingIdGenerator`/`RecordingRandom` üretilen her değeri (tek, üç türe
+> paylaşılan bir sequence sayacıyla) `Capsule.Determinism`'e kaydeder, `ReplayClock`/
+> `ReplayIdGenerator`/`ReplayRandom` aynı değerleri aynı sırayla geri verir — kayıttan fazlası
+> istenirse (kod yolu ayrıştıysa) net bir `TraceCapsuleDeterminismException` fırlatır.
+> `services.AddTraceCapsuleDeterminismReplay(capsule)` bir host'u replay moduna geçirir.
+> `samples/DistributedTransferDemo`'nun payment-service'i bunu gerçekten kullanıyor —
+> `DeterminismReplayTests` gerçek bir çağrının ürettiği payment id/timestamp'in capsule'e
+> kaydedildiğini ve replay'in aynı değerleri ürettiğini kanıtlıyor.
+
 ## External API Recording
 
 Production execution:

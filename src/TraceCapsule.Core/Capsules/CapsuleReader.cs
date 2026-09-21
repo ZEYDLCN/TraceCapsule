@@ -22,6 +22,7 @@ public static class CapsuleReader
             Events = await ReadEntryAsync<List<QueueEventRecord>>(archive, "events.json", cancellationToken) ?? [],
             Exceptions = await ReadEntryAsync<List<ExceptionRecord>>(archive, "exceptions.json", cancellationToken) ?? [],
             Timing = await ReadEntryAsync<TimingRecord>(archive, "timing.json", cancellationToken),
+            Determinism = await ReadEntryAsync<List<DeterminismEventRecord>>(archive, "determinism.json", cancellationToken) ?? [],
         };
         return capsule;
     }

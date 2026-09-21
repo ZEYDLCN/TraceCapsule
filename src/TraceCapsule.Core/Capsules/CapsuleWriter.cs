@@ -7,7 +7,7 @@ namespace TraceCapsule.Core.Capsules;
 /// <summary>Writes a <see cref="Capsule"/> to the on-disk ZIP layout described in the
 /// README: <c>metadata.json</c>, <c>request.json</c>, <c>response.json</c>,
 /// <c>trace.json</c>, <c>external-http.json</c>, <c>events.json</c>,
-/// <c>exceptions.json</c>, <c>timing.json</c>.</summary>
+/// <c>exceptions.json</c>, <c>timing.json</c>, <c>determinism.json</c>.</summary>
 public static class CapsuleWriter
 {
     public static async Task WriteAsync(Capsule capsule, Stream output, CancellationToken cancellationToken = default)
@@ -21,6 +21,7 @@ public static class CapsuleWriter
         if (capsule.Events.Count > 0) await WriteEntryAsync(archive, "events.json", capsule.Events, cancellationToken);
         if (capsule.Exceptions.Count > 0) await WriteEntryAsync(archive, "exceptions.json", capsule.Exceptions, cancellationToken);
         if (capsule.Timing is not null) await WriteEntryAsync(archive, "timing.json", capsule.Timing, cancellationToken);
+        if (capsule.Determinism.Count > 0) await WriteEntryAsync(archive, "determinism.json", capsule.Determinism, cancellationToken);
     }
 
     public static async Task WriteAsync(Capsule capsule, string filePath, CancellationToken cancellationToken = default)
