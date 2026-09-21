@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TraceCapsule.Core.Capsules;
+using TraceCapsule.Core.Fault;
 using TraceCapsule.Core.Model;
 using TraceCapsule.Core.Recording;
 using TraceCapsule.Core.Redaction;
@@ -46,6 +47,8 @@ public sealed class TraceCapsuleMiddleware(RequestDelegate next, IOptions<TraceC
         var stopwatch = Stopwatch.StartNew();
         Exception? caughtException = null;
 
+        var faults = FaultInjectionOptions.ParseHeaderValue(context.Request.Headers[_options.FaultHeaderName]);
+        using var faultScope = FaultInjectionContext.Begin(faults);
         using var scope = CapsuleRecordingContext.Begin(traceId, sessionId, out var recording);
         try
         {

@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TraceCapsule.Core\TraceCapsule.Core.csproj" />
+    <ProjectReference Include="..\..\src\TraceCapsule.Http\TraceCapsule.Http.csproj" />
   </ItemGroup>
 
 </Project>

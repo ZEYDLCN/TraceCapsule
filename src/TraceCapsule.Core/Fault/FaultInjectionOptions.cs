@@ -37,6 +37,18 @@ public sealed class FaultInjectionOptions
         return options;
     }
 
+    /// <summary>Serializes to the wire format used by the
+    /// <c>X-TraceCapsule-Fault-Latency</c> header: <c>"dep1=1000,dep2=2000"</c>.</summary>
+    public string ToHeaderValue() => string.Join(',', Faults
+        .Where(kv => kv.Value.ExtraLatencyMs is > 0)
+        .Select(kv => $"{kv.Key}={kv.Value.ExtraLatencyMs}"));
+
+    /// <summary>Inverse of <see cref="ToHeaderValue"/> — lets a request carry fault
+    /// injection instructions across a process boundary (CLI → target app) without any
+    /// shared state.</summary>
+    public static FaultInjectionOptions ParseHeaderValue(string? headerValue) =>
+        string.IsNullOrWhiteSpace(headerValue) ? new FaultInjectionOptions() : ParseLatencyArgs(headerValue.Split(','));
+
     public bool TryGetFault(string dependencyName, out FaultSpec spec)
     {
         if (Faults.TryGetValue(dependencyName, out var found))

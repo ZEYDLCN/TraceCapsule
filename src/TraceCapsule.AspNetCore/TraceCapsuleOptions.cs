@@ -33,6 +33,11 @@ public sealed class TraceCapsuleOptions
     /// the entry-point service if absent on the inbound request.</summary>
     public string SessionHeaderName { get; set; } = "X-TraceCapsule-Session";
 
+    /// <summary>Request header carrying Phase 6 fault-injection instructions across the
+    /// CLI → target-app process boundary, e.g. <c>"payment-api=3000,fraud-api=500"</c>.
+    /// See <see cref="Core.Fault.FaultInjectionOptions.ParseHeaderValue"/>.</summary>
+    public string FaultHeaderName { get; set; } = "X-TraceCapsule-Fault-Latency";
+
     /// <summary>Caps how much of a request/response body is captured, to keep large
     /// payloads from blowing up capsule size or process memory. Bodies longer than this are
     /// truncated with a <c>"...(truncated)"</c> marker.</summary>
